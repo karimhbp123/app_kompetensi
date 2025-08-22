@@ -1,20 +1,26 @@
 <?php
+ob_start();
 session_start();
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../user/dashboard.php");
     exit;
 }
 
+require '../vendor/autoload.php';
 include '../config/db.php';
 
-// Ambil role dari parameter GET
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+
 $role = isset($_GET['role']) ? $_GET['role'] : '';
 if ($role !== 'asn' && $role !== 'nonasn') {
     echo "Parameter 'role' tidak valid.";
     exit;
 }
 
-// Query data
 $query = mysqli_query($koneksi, "
   SELECT d.*, u.nama, u.nip 
   FROM diklat d
@@ -22,153 +28,81 @@ $query = mysqli_query($koneksi, "
   WHERE u.role = '$role'
   ORDER BY d.tgl_mulai DESC
 ");
-?>
-<!DOCTYPE html>
-<html lang="id">
 
-<head>
-    <meta charset="UTF-8">
-    <title>Data Diklat <?= strtoupper($role) ?></title>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+
+// Header kolom
+$headers = ['No', 'Nama', 'NIP', 'Jenis Diklat', 'Jenis Diklat Struktural', 'Jabatan', 'Nama Diklat', 'Instansi Penyelenggara', 'No Sertifikat', 'Tanggal Mulai', 'Tanggal Selesai', 'Durasi (jam)', 'Sertifikat'];
+$col = 'A';
+foreach ($headers as $header) {
+    $sheet->setCellValue($col . '1', $header);
+    $sheet->getStyle($col . '1')->getFont()->setBold(true);
+    $col++;
+}
+
+$rowNum = 2;
+$no = 1;
+while ($row = mysqli_fetch_assoc($query)) {
+    $sheet->setCellValue("A$rowNum", $no++);
+    $sheet->setCellValue("B$rowNum", $row['nama']);
+    $sheet->setCellValue("C$rowNum", $row['nip']);
+    $sheet->setCellValue("D$rowNum", $row['jenis_diklat']);
+    $sheet->setCellValue("E$rowNum", $row['jenis_diklat_struktural']);
+    $sheet->setCellValue("F$rowNum", $row['jabatan']);
+    $sheet->setCellValue("G$rowNum", $row['nama_diklat']);
+    $sheet->setCellValue("H$rowNum", $row['instansi']);
+    $sheet->setCellValue("I$rowNum", $row['no_sertifikat']);
+    $sheet->setCellValue("J$rowNum", date('d-m-Y', strtotime($row['tgl_mulai'])));
+    $sheet->setCellValue("K$rowNum", date('d-m-Y', strtotime($row['tgl_selesai'])));
+    $sheet->setCellValue("L$rowNum", $row['durasi_jam']);
+
+    $sertifikatPath = '../sertifikat/' . $row['file_sertifikat'];
+    if (!empty($row['file_sertifikat']) && file_exists($sertifikatPath)) {
+        $imageType = @exif_imagetype($sertifikatPath);
+        if (in_array($imageType, [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF])) {
+            $drawing = new Drawing();
+            $drawing->setPath($sertifikatPath);
+            $drawing->setCoordinates("M$rowNum");
+            $drawing->setHeight(70);
+            $drawing->setOffsetX(10);
+            $drawing->setOffsetY(5);
+            $drawing->setWorksheet($sheet);
+            $sheet->getRowDimension($rowNum)->setRowHeight(80);
+        } else {
+            $sheet->setCellValue("M$rowNum", 'Format tidak didukung');
         }
+    } else {
+        $sheet->setCellValue("M$rowNum", 'File tidak ditemukan');
+    }
 
-        .export-btn {
-            margin-bottom: 15px;
-            padding: 8px 15px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+    $rowNum++;
+}
 
-        .export-btn:hover {
-            background-color: #0056b3;
-        }
+// Styling
+$lastRow = $rowNum - 1;
+$sheet->getStyle("A1:M$lastRow")->applyFromArray([
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Border::BORDER_THIN,
+            'color' => ['argb' => 'FF000000'],
+        ],
+    ],
+]);
 
-        .sertifikat-preview {
-            max-width: 100px;
-            max-height: 80px;
-        }
-    </style>
-</head>
+$autoColumns = range('A', 'L'); // Kolom teks
+foreach ($autoColumns as $col) {
+    $sheet->getColumnDimension($col)->setAutoSize(true);
+}
 
-<body>
+$sheet->getColumnDimension('M')->setWidth(20);
 
-    <h2>Data Diklat (<?= strtoupper($role) ?>)</h2>
+ob_end_clean();
+$filename = 'Data_' . strtoupper($role) . '_' . date('Y-m-d') . '.xlsx';
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header("Content-Disposition: attachment; filename=\"$filename\"");
+header('Cache-Control: max-age=0');
 
-    <!-- Tombol Export Excel Lengkap -->
-    <button class="export-btn" onclick="window.location.href='export_diklat.php?role=<?= $role ?>'">
-        Export Lengkap (Excel + Sertifikat)
-    </button>
-
-    <table id="dataTable" class="display nowrap" style="width:100%">
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Nama</th>
-                <th>NIP</th>
-                <th>Jenis Diklat</th>
-                <th>Jenis Struktural</th>
-                <th>Jabatan</th>
-                <th>Nama Diklat</th>
-                <th>Instansi</th>
-                <th>No Sertifikat</th>
-                <th>Tgl Mulai</th>
-                <th>Tgl Selesai</th>
-                <th>Durasi (jam)</th>
-                <th>Sertifikat</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            $no = 1;
-            while ($row = mysqli_fetch_assoc($query)) {
-                // buat nama folder dari nama user
-                $namaFolder = preg_replace('/[^A-Za-z0-9_\-]/', '_', $row['nama']);
-                $userFolder = '../sertifikat/' . $namaFolder . '/';
-
-                $sertifikatCell = "File tidak ditemukan";
-
-                if (!empty($row['file_sertifikat'])) {
-                    $sertifikatPath = $userFolder . $row['file_sertifikat'];
-
-                    if (file_exists($sertifikatPath)) {
-                        $ext = strtolower(pathinfo($sertifikatPath, PATHINFO_EXTENSION));
-                        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-                            $sertifikatCell = "<img src='{$sertifikatPath}' class='sertifikat-preview'>";
-                        } elseif ($ext === 'pdf') {
-                            $sertifikatCell = "<a href='{$sertifikatPath}' target='_blank'>Lihat PDF</a>";
-                        }
-                    }
-                }
-
-                echo "<tr>
-            <td>{$no}</td>
-            <td>{$row['nama']}</td>
-            <td>{$row['nip']}</td>
-            <td>{$row['jenis_diklat']}</td>
-            <td>{$row['jenis_diklat_struktural']}</td>
-            <td>{$row['jabatan']}</td>
-            <td>{$row['nama_diklat']}</td>
-            <td>{$row['instansi']}</td>
-            <td>{$row['no_sertifikat']}</td>
-            <td>" . date('d-m-Y', strtotime($row['tgl_mulai'])) . "</td>
-            <td>" . date('d-m-Y', strtotime($row['tgl_selesai'])) . "</td>
-            <td>{$row['durasi_jam']}</td>
-            <td>{$sertifikatCell}</td>
-          </tr>";
-                $no++;
-            }
-
-            ?>
-        </tbody>
-    </table>
-
-    <!-- jQuery & DataTables -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
-    <!-- Buttons & Export (pakai JSZip & pdfmake) -->
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            $('#dataTable').DataTable({
-                responsive: true,
-                scrollX: true,
-                dom: 'Bfrtip',
-                buttons: [{
-                        extend: 'csvHtml5',
-                        title: 'Data <?= strtoupper($role) ?>'
-                    },
-                    {
-                        extend: 'pdfHtml5',
-                        title: 'Data <?= strtoupper($role) ?>',
-                        orientation: 'landscape',
-                        pageSize: 'A4'
-                    }
-                ],
-                language: {
-                    search: "Cari:",
-                    lengthMenu: "Tampilkan _MENU_ data",
-                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    infoEmpty: "Tidak ada data tersedia",
-                    infoFiltered: "(disaring dari _MAX_ total data)"
-                }
-            });
-        });
-    </script>
-
-</body>
-
-</html>
+$writer = new Xlsx($spreadsheet);
+$writer->save('php://output');
+exit;
