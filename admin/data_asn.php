@@ -8,7 +8,7 @@ include '../config/db.php';
 
 $query = mysqli_query($koneksi, "
   SELECT d.nama, d.nip, d.jabatan, d.nama_diklat, d.jenis_diklat, d.jenis_diklat_struktural, d.instansi,
-         d.no_sertifikat, d.tgl_mulai, d.tgl_selesai, d.durasi_jam, d.file_sertifikat
+         d.no_sertifikat, d.tgl_mulai, d.tgl_selesai, d.durasi_jam, d.file_sertifikat, u.nama AS nama_user
   FROM diklat d
   JOIN users u ON d.user_id = u.id
   WHERE u.role = 'asn'
@@ -311,7 +311,7 @@ $jam = date('H:i');
               <td><?= $row['durasi_jam'] ?> jam</td>
               <td>
                 <?php if ($row['file_sertifikat']) : ?>
-                  <a href="#" class="badge-view" data-img="../sertifikat/<?= htmlspecialchars(preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($row['nama']))) ?>/<?= htmlspecialchars($row['file_sertifikat']) ?>">
+                  <a href="#" class="badge-view" data-img="../sertifikat/<?= htmlspecialchars(preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($row['nama_user']))) ?>/<?= htmlspecialchars($row['file_sertifikat']) ?>">
                     <span class="icon">🔍</span>
                     <span class="text">View</span>
                   </a>

@@ -19,7 +19,7 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($koneksi, $_GET['se
 $log = mysqli_query($koneksi, "
   SELECT d.nama, d.nip, u.role AS status, d.jabatan, 
          d.nama_diklat, d.jenis_diklat, d.jenis_diklat_struktural, d.instansi, 
-         d.no_sertifikat, d.tgl_mulai, d.tgl_selesai, d.durasi_jam, d.file_sertifikat
+         d.no_sertifikat, d.tgl_mulai, d.tgl_selesai, d.durasi_jam, d.file_sertifikat, u.nama AS nama_user
   FROM diklat d 
   JOIN users u ON d.user_id = u.id 
   WHERE d.nama LIKE '%$search%' OR d.nip LIKE '%$search%'
@@ -486,16 +486,16 @@ $jam = date('H:i');
                 <td><?= date('d M Y', strtotime($row['tgl_mulai'])) ?></td>
                 <td><?= date('d M Y', strtotime($row['tgl_selesai'])) ?></td>
                 <td><?= htmlspecialchars($row['durasi_jam']) ?> jam</td>
-                <td>
-                  <?php if ($row['file_sertifikat']) : ?>
-                    <a href="#" class="badge-view" data-img="../sertifikat/<?= htmlspecialchars(preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($row['nama']))) ?>/<?= htmlspecialchars($row['file_sertifikat']) ?>">
-                      <span class="icon">🔍</span>
-                      <span class="text">View</span>
-                    </a>
-                  <?php else : ?>
-                    <span style="color: #999;">Tidak ada</span>
-                  <?php endif; ?>
-                </td>
+                <<td>
+                <?php if ($row['file_sertifikat']) : ?>
+                  <a href="#" class="badge-view" data-img="../sertifikat/<?= htmlspecialchars(preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($row['nama_user']))) ?>/<?= htmlspecialchars($row['file_sertifikat']) ?>">
+                    <span class="icon">🔍</span>
+                    <span class="text">View</span>
+                  </a>
+                <?php else : ?>
+                  <span style="color: #999;">Tidak ada</span>
+                <?php endif; ?>
+              </td>
                 <td>
                   <?php if ($row['status'] === 'asn'): ?>
                     <span class="badge badge-asn">ASN</span>
