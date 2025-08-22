@@ -74,6 +74,7 @@ $last_diklat = mysqli_fetch_assoc($q_last);
 <head>
   <meta charset="UTF-8">
   <title>Dashboard User</title>
+  <link rel="icon" type="image/png" href="/app_kompetensi/favicon.png">
   <style>
     * {
       box-sizing: border-box;

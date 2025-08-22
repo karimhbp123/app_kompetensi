@@ -21,32 +21,38 @@ if (isset($_POST['simpan'])) {
   $tgl_selesai = $_POST['tanggal_selesai'];
   $durasi_jam = (int) $_POST['durasi_jam'];
 
-  $filename = uniqid() . "_" . basename($_FILES['file_sertifikat']['name']);
+  // ======== HANDLE FILE UPLOAD =========
+  $namaFileAsli = $_FILES['file_sertifikat']['name'];
   $tmp = $_FILES['file_sertifikat']['tmp_name'];
 
-  $nama = mysqli_real_escape_string($koneksi, $_POST['nama']);
-  $folder_nama = strtolower(trim($nama)); // trim spasi & lowercase
-  $folder_nama = preg_replace('/[^a-z0-9]/', '_', $folder_nama); // hanya huruf/angka
+  // Bersihkan nama file → ganti spasi jadi underscore, buang karakter aneh
+  $namaFileAman = preg_replace('/[^A-Za-z0-9_\-.]/', '_', $namaFileAsli);
+
+  // Tambahkan uniqid supaya tidak bentrok
+  $filename = uniqid() . "_" . $namaFileAman;
+
+  // Nama folder user berdasarkan nama
+  $folder_nama = strtolower(trim($nama)); 
+  $folder_nama = preg_replace('/[^a-z0-9]/', '_', $folder_nama); 
   $user_folder = '../sertifikat/' . $folder_nama . '/';
 
+  // Buat folder jika belum ada
   if (!file_exists($user_folder)) {
     mkdir($user_folder, 0755, true);
   }
 
-  $filename = uniqid() . "_" . basename($_FILES['file_sertifikat']['name']);
   $path = $user_folder . $filename;
 
   if (move_uploaded_file($tmp, $path)) {
     $query = "
-        INSERT INTO diklat (
-          id, user_id, nama, nip, jenis_diklat, jenis_diklat_struktural, jabatan, nama_diklat,
-          instansi, no_sertifikat, tgl_mulai, tgl_selesai, durasi_jam, file_sertifikat
-        ) VALUES (
-          '', '$user_id', '$nama', '$nip', '$jenis_diklat', '$jenis_diklat_struktural', '$jabatan', '$nama_diklat',
-          '$instansi', '$no_sertifikat', '$tgl_mulai', '$tgl_selesai', '$durasi_jam', '$filename'
-        )
-      ";
-
+      INSERT INTO diklat (
+        id, user_id, nama, nip, jenis_diklat, jenis_diklat_struktural, jabatan, nama_diklat,
+        instansi, no_sertifikat, tgl_mulai, tgl_selesai, durasi_jam, file_sertifikat
+      ) VALUES (
+        '', '$user_id', '$nama', '$nip', '$jenis_diklat', '$jenis_diklat_struktural', '$jabatan', '$nama_diklat',
+        '$instansi', '$no_sertifikat', '$tgl_mulai', '$tgl_selesai', '$durasi_jam', '$filename'
+      )
+    ";
 
     if (mysqli_query($koneksi, $query)) {
       header("Location: ../user/upload_sertifikat_user.php");
@@ -58,3 +64,4 @@ if (isset($_POST['simpan'])) {
     echo "Gagal upload file sertifikat.";
   }
 }
+?>

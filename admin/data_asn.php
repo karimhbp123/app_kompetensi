@@ -26,6 +26,7 @@ $jam = date('H:i');
 <head>
   <meta charset="UTF-8">
   <title>Data Pegawai ASN</title>
+  <link rel="icon" type="image/png" href="/app_kompetensi/favicon.png">
   <style>
     * {
       box-sizing: border-box;

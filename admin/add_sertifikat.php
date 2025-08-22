@@ -12,6 +12,7 @@ $users = mysqli_query($koneksi, "SELECT id, nama FROM users WHERE role != 'admin
 <head>
   <meta charset="UTF-8">
   <title>➕ Tambah Sertifikat User</title>
+  <link rel="icon" type="image/png" href="/app_kompetensi/favicon.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * {

@@ -21,6 +21,7 @@ if (!$data) {
 <head>
   <meta charset="UTF-8">
   <title>✏️ Edit Data Kompetensi</title>
+  <link rel="icon" type="image/png" href="/app_kompetensi/favicon.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * {

@@ -41,6 +41,7 @@ $jam = date('H:i');
 <head>
   <meta charset="UTF-8">
   <title>Dashboard Admin</title>
+  <link rel="icon" type="image/png" href="/app_kompetensi/favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * {
@@ -486,7 +487,7 @@ $jam = date('H:i');
                 <td><?= date('d M Y', strtotime($row['tgl_mulai'])) ?></td>
                 <td><?= date('d M Y', strtotime($row['tgl_selesai'])) ?></td>
                 <td><?= htmlspecialchars($row['durasi_jam']) ?> jam</td>
-                <<td>
+                <td>
                 <?php if ($row['file_sertifikat']) : ?>
                   <a href="#" class="badge-view" data-img="../sertifikat/<?= htmlspecialchars(preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($row['nama_user']))) ?>/<?= htmlspecialchars($row['file_sertifikat']) ?>">
                     <span class="icon">🔍</span>

@@ -28,6 +28,7 @@ $result = mysqli_query($koneksi, $query);
 <head>
     <meta charset="UTF-8">
     <title>Upload Sertifikat Pegawai</title>
+    <link rel="icon" type="image/png" href="/app_kompetensi/favicon.png">
     <style>
         * {
             box-sizing: border-box;

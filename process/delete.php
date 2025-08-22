@@ -13,7 +13,6 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
   exit;
 }
 
-$nama_session = preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower(trim($_SESSION['nama'])));
 $id = intval($_GET['id']);
 $user_id = $_SESSION['user_id'];
 
@@ -22,41 +21,42 @@ $query = "SELECT nama, file_sertifikat FROM diklat WHERE id = $id AND user_id = 
 $result = mysqli_query($koneksi, $query);
 
 if (!$result || mysqli_num_rows($result) === 0) {
-  // Data tidak ditemukan atau bukan milik user ini
   header("Location: ../user/upload_sertifikat_user.php");
   exit;
 }
 
 $data = mysqli_fetch_assoc($result);
 $file = $data['file_sertifikat'];
-$nama_folder = preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower(trim($data['nama'])));
+$nama_folder = preg_replace('/[^a-z0-9]/', '_', strtolower(trim($data['nama'])));
 
 // Path file
 $filePath = "../sertifikat/$nama_folder/$file";
 
 if (!empty($file) && file_exists($filePath)) {
-  if (unlink($filePath)) {
-    // Jika file berhasil dihapus, cek apakah folder user kosong
-    $folderPath = "../sertifikat/$nama_folder";
-    if (is_dir($folderPath) && count(scandir($folderPath)) == 2) {
-      // Folder kosong (hanya . dan ..)
-      if (!rmdir($folderPath)) {
-        error_log("❌ Gagal menghapus folder: $folderPath");
-      } else {
-        error_log("✅ Folder kosong berhasil dihapus: $folderPath");
+  // Cek keamanan path
+  if (strpos(realpath($filePath), realpath("../sertifikat/")) === 0) {
+    if (unlink($filePath)) {
+      // Hapus folder jika kosong
+      $folderPath = "../sertifikat/$nama_folder";
+      if (is_dir($folderPath) && count(scandir($folderPath)) == 2) {
+        @rmdir($folderPath);
       }
+    } else {
+      error_log("❌ Gagal menghapus file: $filePath");
     }
   } else {
-    error_log("❌ Gagal menghapus file: $filePath");
+    error_log("❌ Path ilegal dicegah: $filePath");
+    header("Location: ../user/upload_sertifikat_user.php?status=invalidpath");
+    exit;
   }
 } else {
-  error_log("❌ File tidak ditemukan di path: $filePath");
+  error_log("❌ File tidak ditemukan: $filePath");
 }
 
-// Hapus data dari database
-$delete = mysqli_query($koneksi, "DELETE FROM diklat WHERE id = $id AND user_id = $user_id");
-
-if ($delete) {
+// Hapus data dari database (prepared statement lebih aman)
+$stmt = $koneksi->prepare("DELETE FROM diklat WHERE id = ? AND user_id = ?");
+$stmt->bind_param("ii", $id, $user_id);
+if ($stmt->execute()) {
   header("Location: ../user/upload_sertifikat_user.php?status=deleted");
   exit;
 } else {
